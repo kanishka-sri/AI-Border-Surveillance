@@ -876,23 +876,78 @@ if uploaded is not None:
                                 2,
                             )
 
-                # Restricted zone
+                # Restricted zone / Virtual Fence
+                # Visual-only change: the existing zone coordinates and
+                # inside_zone() entry/exit logic remain unchanged.
+                fence_color = (0, 165, 255)  # orange
+
+                # Draw a segmented/dashed virtual fence on all four sides.
+                dash = 28
+                gap = 14
+
+                # Top and bottom
+                x_start, x_end = zone[0], zone[2]
+                y_top, y_bottom = zone[1], zone[3]
+
+                x = x_start
+                while x < x_end:
+                    x2 = min(x + dash, x_end)
+                    cv2.line(frame, (x, y_top), (x2, y_top), fence_color, 3)
+                    cv2.line(frame, (x, y_bottom), (x2, y_bottom), fence_color, 3)
+                    x += dash + gap
+
+                # Left and right
+                y_start, y_end = zone[1], zone[3]
+
+                y = y_start
+                while y < y_end:
+                    y2 = min(y + dash, y_end)
+                    cv2.line(frame, (zone[0], y), (zone[0], y2), fence_color, 3)
+                    cv2.line(frame, (zone[2], y), (zone[2], y2), fence_color, 3)
+                    y += dash + gap
+
+                # Fence corner markers make the protected boundary obvious.
+                corner = 18
+                for cx, cy in [
+                    (zone[0], zone[1]),
+                    (zone[2], zone[1]),
+                    (zone[0], zone[3]),
+                    (zone[2], zone[3]),
+                ]:
+                    cv2.line(frame, (cx, cy), (cx + (corner if cx == zone[0] else -corner), cy),
+                             fence_color, 4)
+                    cv2.line(frame, (cx, cy), (cx, cy + (corner if cy == zone[1] else -corner)),
+                             fence_color, 4)
+
+                # Professional virtual-fence label.
+                label = "RESTRICTED / VIRTUAL FENCE"
+                (tw, th), _ = cv2.getTextSize(
+                    label, cv2.FONT_HERSHEY_SIMPLEX, 0.68, 2
+                )
+
+                label_x = zone[0] + 10
+                label_y = zone[1] - 12
+
+                if label_y < th + 8:
+                    label_y = zone[1] + th + 18
+
                 cv2.rectangle(
                     frame,
-                    (zone[0], zone[1]),
-                    (zone[2], zone[3]),
-                    (0, 0, 255),
-                    2,
+                    (label_x - 7, label_y - th - 7),
+                    (label_x + tw + 7, label_y + 7),
+                    (20, 20, 20),
+                    -1,
                 )
 
                 cv2.putText(
                     frame,
-                    "RESTRICTED ZONE",
-                    (zone[0], max(30, zone[1] - 10)),
+                    label,
+                    (label_x, label_y),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (0, 0, 255),
+                    0.68,
+                    fence_color,
                     2,
+                    cv2.LINE_AA,
                 )
 
                 cv2.line(
